@@ -1,0 +1,326 @@
+<!doctype html>
+<meta charset="utf-8"/>
+
+<title>JS Modules</title>
+<script src="slides.js"></script>
+<link rel=stylesheet href="slides.css">
+
+<slide class=center>
+  <div class="big">module systems</div>
+  <div class="big">in <span class=red>JavaScript</span></div>
+  <div class=smaller style="margin-top: 1em">Marijn Haverbeke</div>
+</slide>
+
+<slide>
+  <div class=red>Why?</div>
+  <ul><li>Reusable</li><li>Structured</li><li>Approachable</li></ul>
+</slide>
+
+<slide>
+  <div><span class=sun>★</span> <span class=big>Interfaces</span> <span class=sun>★</span></div>
+</slide>
+
+<slide>
+  <pre style="font-size: 45%" data-lang="xml">
+    &lt;script src="js/paper.js">&lt;/script>
+    &lt;script src="js/exercises.js">&lt;/script>
+    &lt;script src="js/app.js">&lt;/script>
+  </pre>
+</slide>
+
+<slide class="center smaller">
+  <div style="margin-bottom: -.4em">
+    <div class="circle blue-bg" style="margin-right: 2em">Mod 1</div>
+    <div class="circle blue-bg">Mod 2</div>
+  </div>
+  <div>⬊ &nbsp; &nbsp; &nbsp; ⬋</div>
+  <div>
+    <div class="circle blue-bg">Mod 3</div> ➡
+    <div class="circle sun-bg">global</div>
+    ⬅ <div class="circle blue-bg">Mod 4</div>
+  </div>
+  <div>⬈ &nbsp; &nbsp; &nbsp; ⬉</div>
+  <div style="margin-top: -.4em">
+    <div class="circle blue-bg" style="margin-right: 2em">Mod 5</div>
+    <div class="circle blue-bg">Mod 6</div>
+  </div>
+</slide>
+
+<slide>
+  <div class="smaller sun">Exercises</div>
+  <div class=waybig>2007</div>
+</slide>
+
+<slide class="smaller">
+  <div>
+    &nbsp;<div class="circle blue-bg">app</div>
+  </div>
+  <div style="padding-left: 1.5em">⬇&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ⬊</div>
+  <div>
+    <div class="circle blue-bg" style="margin-right: 1em">paper</div>
+    <div class="circle blue-bg">examples</div>
+  </div>
+  <div style="padding-left: 1.5em">⬇</div>
+  <div>
+    <div class="circle sun-bg">jquery</div>
+  </div>
+</slide>
+
+<slide>
+  <div class=red>Escape</div>
+  <div class=smaller>from the</div>
+  <div>global scope</div>
+</slide>
+
+<slide>
+  <div>CommonJS</div>
+  <pre>
+var jquery = require("./jquery")
+module.exports = function Paper() {}</pre>
+</slide>
+
+<slide>
+  <pre>
+(function(exports, require, module,
+          __filename, __dirname) {
+  // Module code ends up here
+})</pre>
+</slide>
+
+<slide>
+  <div class="smaller sun">Exercises</div>
+  <div class=waybig>2009</div>
+</slide>
+
+<slide>
+  <div class=small>Asynchronous Module Definition</div>
+  <pre>define(["jquery"], function($) {
+  // module code
+  return function Paper() {}
+})</pre>
+</slide>
+
+<slide>
+  <ul>
+    <li>Raw/globals
+    <li>CommonJS
+    <li>AMD
+  </ul>
+</slide>
+
+<slide>
+  <div class=small>“Universal Module Definition”</div>
+  <pre style="font-size: 35%">
+!function(mod, global) {
+  if (typeof exports == "object" &&
+      typeof module == "object")
+    module.exports = mod(require("./jquery")) // CommonJS
+  else if (typeof define == "function" && define.amd)
+    define(["./jquery"], mod) // AMD
+  else
+    global.Paper = mod(global.$) // globals
+}(function($) {
+  // module code here
+  return function Paper() {}
+}, this)</pre>
+</slide>
+
+<slide>
+  <div class="waybig"><span class=blue style="font-weight: normal">✨</span> NPM <span class=blue style="font-weight: normal">✨</span></div>
+</slide>
+
+<slide class="full">
+  <div class=small>A package</div>
+  <ul class=smaller>
+    <li>has a unique name
+    <li>has a metadata <code>package.json</code> file
+    <li>has a README file
+    <li>uses (at least) CommonJS
+    <li>is available from the NPM repository
+    <li>accesses depencies with <code>require("name")</code>
+  </ul>
+</slide>
+
+<slide class="full">
+  <div class=small><code>package.json</code></div>
+  <ul class=smaller>
+    <li>declares dependencies
+    <li>specifies an entry script
+    <li>lists tools/binaries
+    <li>specifies how to install the module
+    <li>(+ more metadata)
+  </ul>
+</slide>
+
+<slide>
+  <pre style="font-size: 90%">npm install foo
+require("foo")</pre>
+</slide>
+
+<slide>
+  <div class=blue>Bundling</div>
+  <pre style="font-size: 80%">Tree ➡ Bundle</pre>
+</slide>
+
+<slide>
+  <pre style="font-size: 70%">require(__dirname + "/" + stuff())</pre>
+</slide>
+
+<slide>
+  <div class="smaller sun">Exercises</div>
+  <div class=waybig>2012</div>
+</slide>
+
+<slide class=smaller>
+   <pre>!function(modules) {
+  var loaded = []
+  function require(i) {
+    if (!loaded[i]) {
+      var mod = loaded[i] = {exports: {}}
+      modules[i](mod.exports, require, mod)
+    }
+    return loaded[i].exports
+  }
+  require(0)
+}([
+  function(exports, require, module) { ... }
+  function(exports, require, module) { ... }
+])</pre>
+</slide>
+
+<slide>
+  <div>ES modules</div>
+  <pre>import $ from "jquery"
+export class Paper { ... }
+</pre>
+</slide>
+
+<slide>
+  <div>ES modules</div>
+  <pre>import {a, b, c} from "d"
+import defaultExport from "e"
+import * as object from "f"
+
+export default "hello"
+export const x = "bye"
+</pre>
+</slide>
+
+<slide>
+  <div>Rollup</div>
+  <pre>export let x = 10    // a.js
+
+import {x} from "a"  // b.js
+console.log(x)
+
+let x = 10           // bundle.js
+console.log(x)</pre>
+</slide>
+
+<slide>
+  <div>Toolchains won</div>
+  <ul class=small>
+    <li>Check
+    <li>Translate
+    <li>Bundle
+    <li>Minify
+    <li>Hot-reload
+  </ul>
+</slide>
+
+<slide>
+  <div class="smaller sun">Exercises</div>
+  <div class=waybig>2015</div>
+</slide>
+
+<slide class=center>
+  <div class=small>Semantic versioning</div>
+  <div><span class=red>major</span>.<span class=sun>minor</span>.<span class=blue>patch</span></div>
+</slide>
+
+<slide class="center smaller">
+  <div>
+    <div class="circle blue-bg">app</div>
+  </div>
+  <div>⬋ &nbsp; &nbsp; &nbsp; ⬊</div>
+  <div>
+    <div class="circle blue-bg" style="margin-right: 2em">x</div>
+    <div class="circle blue-bg">y</div>
+  </div>
+  <div>⬊ &nbsp; &nbsp; &nbsp; ⬋</div>
+  <div>
+    <div class="circle blue-bg">z</div>
+  </div>
+</slide>
+
+<slide class="center smaller">
+  <div>
+    <div class="circle blue-bg">app</div>
+  </div>
+  <div>⬋ &nbsp; &nbsp; &nbsp; ⬊</div>
+  <div>
+    <div class="circle blue-bg" style="margin-right: 2em">x</div>
+    <div class="circle blue-bg">y</div>
+  </div>
+  <div>&nbsp; &nbsp; ⬊ 1.x &nbsp; ⬋ 2.x</div>
+  <div>
+    <div class="circle blue-bg">z?</div>
+  </div>
+</slide>
+
+<slide class="center smaller">
+  <div>
+    <div class="circle blue-bg">app</div>
+  </div>
+  <div>⬋ &nbsp; &nbsp; &nbsp; ⬊</div>
+  <div>
+    <div class="circle blue-bg" style="margin-right: 2em">x</div>
+    <div class="circle blue-bg">y</div>
+  </div>
+  <div>&nbsp; &nbsp; &nbsp; ⬇ 1.x &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ⬇ 2.x</div>
+  <div>
+    <div class="circle blue-bg" style="margin-right: 2em">z 1</div>
+    <div class="circle blue-bg">z 2</div>
+  </div>
+</slide>
+
+<slide class=smaller>
+  <div class=normal style="margin-bottom: .5em">Reproduceable builds</div>
+  <div class=box style="margin-right: 2em">
+    <div>Test</div>
+    <pre style="font-size: 80%">"x": "^5.2.1"</pre>
+    <div>x <span class=blue>5.2.3</span></div>
+  </div>
+  <div class=box>
+    <div>Production</div>
+    <pre style="font-size: 80%">"x": "^5.2.1"</pre>
+    <div>x <span class=red>5.3.0</span></div>
+  </div>
+</slide>
+
+<slide>
+  <div><span class=sun>⚡</span> <span class=big>Code splitting</span> <span class=sun>⚡</span></div>
+</slide>
+
+<slide>
+  <pre>// Static
+import {x} from "y"
+// Dynamic
+import("y").then(y => console.log(y.x))</pre>
+</slide>
+
+<slide>
+  <div class="smaller sun">Exercises</div>
+  <div class=waybig>2017</div>
+</slide>
+
+<slide class=center>
+  <div class=waybig style="margin-bottom: .5em">The End</div>
+  <div class=smaller><a class=blue href="https://github.com/marijnh/module-workshop">github.com/marijnh/module-workshop</a></div>
+</slide>
+
+<script src="codemirror/runmode-standalone.js"></script>
+<script src="codemirror/javascript.js"></script>
+<script src="codemirror/xml.js"></script>
+<script src="codemirror/colorize.js"></script>
+<script>CodeMirror.colorize(null, "javascript")</script>

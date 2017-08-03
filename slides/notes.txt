@@ -1,0 +1,690 @@
+Hello. This workshop is going to talk about modules and module systems
+in JavaScript. Because there is a lot of historical baggage in the way
+we are currently still doing modules, the workshop is structured along
+the timeline of the past ten years, during which the JS community's
+approach to modularity mostly went from simple and deeply broken to
+complicated but largely working. Though at times we also hit
+complicated and broken.
+
+JavaScript has the good fortune of being born without any concept of
+modules built in. I say good fortune because, though it may sound nice
+to have a module system, a broken module system is worse than none at
+all. These are hard to get right, and there are many examples of
+languages that started with a poor one and never really recovered --
+think of C and C++.
+
+I guess serious software engineering in the large wasn't really on the
+roadmap when JavaScript was designed. I mean, I was never able to
+verify this, but from the awkward required close tag on the `<script>`
+tag, I suspect that even support for the `src` wasn't really part of
+the original plan.
+
+So what are modules, and what do we want from them?
+
+For a long time, I maintained my code editor library as a single file,
+which over the years went from 1500 to 8000 lines of code. And this
+was actually nice -- you always knew what file something was in, you
+could get the whole thing with a single script tag, and there were no
+build steps to worry about. Having to deal with more than one file
+definitely adds friction.
+
+But if you want to use such a library in a project, you probably don't
+want to just copy-paste it into your own giant script file. So library
+boundaries are definitely a place where we want modules, so that we
+can easily drop them into our project.
+
+And even within a project, keeping some kind of structure can be a
+very useful antidote for making everything interact with everything.
+I'm still struggling to untangle that library I just mentioned --
+forcing yourself to go through clearly specified and somewhat clean
+interfaces can help a lot in keeping a system understandable.
+
+So in the end it is all about interfaces -- splitting the complexity
+of a system by comparimentalizing, and allowing reuse by making it
+possible to write code against a given interface without worrying
+about the precise source code that's going to provide that interface.
+But most of this workshop is going to _be_ about how to make sure that
+the source code that provides the interfaces we rely on is loaded and
+that we have access to it.
+
+It is 2007. JavaScript development in the large is starting to be _a
+thing_. But we don't have much tools for it. Even build tools aren't
+really used yet. So how does modular development work?
+
+As our running example, we'll use a simple web app for practicing
+simple arithmetic. For now, it consists of three modules, one that
+implements the output/user input system, one that generates exercises,
+and one that ties those two together into an actual working app.
+
+Lots of script tags, mostly. Each script either adds something to the
+global scope for other scripts to access, or just _does_ something,
+and if you put the script tags in the right order, and don't forget
+any, you get a working page. So the way the modules interact is
+implicit -- they all have access to the global scope, and use that to
+'communicate'. There is no explicit way to figure out what depends on
+what.
+
+A widely used convention is that each library would set a single
+global, and those that depend on it assume the global is there and use
+it.
+
+And up to a certain point, this worked. In fact, many webpages are
+still developed this way.
+
+You'll find the initial, rather naive, version of the example project
+in the 2007 directory. Right now, it's not using any external
+libraries. Let's fix that. When was jQuery written? 2006, so it
+existed in 2007. Let's add it. There's a README.md file under the 2007
+directory in the code tree. That outlines the exercises for that year.
+The main one is to update paper.js to use jQuery, and then get the
+entire app to run.
+
+Note that things probably won't work immediately, since I
+intentionally put a problem in the code. Exercise 2 is to find and fix
+that problem, preferably in a general way.
+
+Then there's a few bonus exercises that you can look at if you're done
+quickly. We'll discuss those afterwards.
+
+---
+
+So that last exercise involved having the files themselves declare
+what they depend on, which allowed us to build up an accurate
+dependency graph. Which, in this case, looked something like this.
+
+As soon as your graph is deeper than a single level—i.e. our main app
+depending on paper.js which in turn depends on jQuery, it gets very
+awkward to load dependencies by hand, which is why we need tools like
+loaders or bundlers.
+
+Dependency graphs are great, because they help us automatically
+determine what to load and in what order. They can also be helpful in
+figuring out the structure of a project or seeing why it is pulling in
+so much code.
+
+So, is there anything still wrong with our approach? For one thing,
+there's that global scope issue. Modules just _do_ things to a single,
+shared, mutable scope, and if they step on each other's toes, for
+example by trying to define the same global, things go wrong. Except
+for C and emacs lisp, very few languages do modularity by just having
+all modules happily shove things into a shared scope. Can we get away
+from that in JavaScript?
+
+Yes, we can, by abusing function scopes. In 2009, node was released,
+popularizing a module system known as 'CommonJS modules'. The two main
+concepts in such modules are the `require` function and the `module`
+object.
+
+    var jquery = require("./jquery")
+    module.exports = function Paper() {}
+
+If you call `require`, that _returns_ the interface of the module you
+asked for. To determine what your own interface is, you set
+`module.exports` (which is initialized to an empty object by default).
+
+`require` does a few things. It resolves the string you give it to an
+actual file—and having a _resolution_ step here, rather than expecting
+people to always specify path names directly is important. We'll get
+back to that later. If that module has already been loaded, it just
+returns its interface from a cache. Otherwise, it loads the code, and
+wraps it in a function like this, before calling that function with
+the appropriate values:
+
+    (function (exports, require, module, __filename, __dirname) {
+      // Module code ends up here
+    })
+
+You can actually see this if you have an error on the first line of a
+module in node—the resulting exception will include the inserted code.
+
+There are two important things happening here—firstly, the module gets
+wrapped in its own scope, so variables created normally end up being
+local, rather than in the global scope. This removes the need to
+manually wrap your modules, which is nice. Secondly, the function
+parameters are used to inject a bunch of module-local values into the
+module.
+
+`exports` is just a shortcut to the default object value of
+`module.exports`. `require` is a function that _knows_ which module
+this is, so that it can use the module's path to resolve other
+modules. `module` is an object that contains that information, along
+with an `exports` property that you can use to set the module
+interface to an arbitrary value. `__filename` and `__dirname` provide
+ways for a the module itself to figure out who it is.
+
+That's quite a lot of duplicated information, for convenience I
+suppose (you don't want everybody to have to write `module.require`
+every time they want to load a dependency).
+
+But roughly, that's all there is to it. You could implement that in a
+few dozen lines of code. And that, of course, is what I'm going to ask
+you to do. Module resolution can be really simple for now, supporting
+only relative paths—use the `resolve` function from node's `path`
+module.
+
+---
+
+Okay, now we have a module loader, sort of. But if we go back to the
+browser, how would we apply it there? There's no `readFileSync` in the
+browser. You can kind of do read-file, but the only way to do sync is
+with a synchronous XMLHttpRequest, which is generally a rather bad
+idea, because it will lock up the page for the duration of a whole
+network request.
+
+CommonJS modules are defined in a synchronous way, though — when you
+call `require`, it is supposed to immediately return the required
+module's interface. As such, it is rather poorly suited for use in
+browsers.
+
+There are two solutions to this problem, both introduced around 2012.
+The first is the 'asynchrounous module definition' (AMD) system, which
+is another style of module loading that is more friendly to
+asynchronicity. The second is bundling, which we'll get back to in a
+moment.
+
+An AMD module looks like this:
+
+    define(["jquery"], function($) {
+      // module code
+      return function Paper() {}
+    })
+
+The `define` function is provided by the module loader, and though it
+is specified to take a whole zoo of different parameter styles, the
+main one first an array of module names, and then a function that
+takes these modules' interfaces as arguments, runs the module code,
+and returns its interface.
+
+This forces you to specify all your dependencies in advance, and wrap
+the module code in a function (again), which can be called,
+asynchronously, when the dependencies have been loaded.
+
+The advantage of this is that, with a library like RequireJS (not to
+be confused with CommonJS' `require` function), you can run such code
+unmodified in the browser. The disadvantage is that it's a little more
+awkward to use than CommonJS, and of course that it introduces _yet_
+another module style.
+
+The 'code reuse' idea of modularity only works if you can actually
+load the modules that you want to reuse. And if everybody's has a
+different idea of what a module is, that gets difficult. This is why
+community-wide conventions are really important. If developers can
+agree on a general framework for modules, their life gets better.
+
+The JavaScript community's answer to that has been a total eyesore,
+but it works. It is 'universal module definitions', which sounds
+elegant until you realize that it's basically a bunch of horrid
+feature tests to figure out which of the three dominant approaches to
+modules, CommonJS, AMD, and global variables, the module should hook
+into.
+
+    !function(mod, global) {
+      if (typeof exports == "object" && typeof module == "object")
+        mod(require("./jquery")) // CommonJS
+      else if (typeof define == "function" && define.amd)
+        define(["./jquery"], mod) // AMD
+      else
+        global.Paper = mod(global.$) // globals
+    }(function($) {
+      // module code here
+      return function Paper() {}
+    }, this)
+
+It's a miracle of human ingenuity.
+
+(Note that this is only 'universal' until the next module convention
+shows up, which, as you may be aware, has already happened.)
+
+As of today, this is still pretty much how you are expected to ship
+libraries that are intended for the browser. Since it pretty much
+repeats the same information in three different way, each of which has
+its own quirks, you can imagine that maintaining these is great fun.
+
+But there is hope. I mentioned the importance of conventions a moment
+ago. Which project has been a _great_ source of useful conventions in
+JavaScript-land?
+
+I was referring to _NPM_. It has provided us with a more precise
+definition of a package, namely:
+
+ - A package has a unique name
+
+ - It comes with a package.json file that declares
+
+   - What other package it depends on
+
+   - What its main script is
+
+   - Which tools/binaries it provides
+
+   - How to install it
+
+ - Uses (at least) CommonJS to define its modules
+
+ - It comes with a README file that has documentation
+
+ - It can be downloaded from the NPM repository
+
+ - Once installed, it can be refered to with a simple
+   `require("packagename")`
+
+By doing this (and getting those conventions adopted), NPM has
+resulted in a giant improvement in the ability of JavaScript
+developers to distribute packages and reuse other people's packages.
+
+(Bower sort of tried to do the same thing in a more browser-oriented
+way, but was really poorly executed. Use NPM, also for the browser.)
+
+NPM is of course also a command-line tool that helps you install
+packages, and it's good at that, at least in recent versions, but I
+want to stress that its main contribution was in getting the community
+to agree on what a package is. (So that a separate tool like `yarn`,
+which is basically a different approach to building a client for that
+same system, can exist alongside it.)
+
+Along with NPM came node's resolution algorithm, which supports
+non-relative requires by searching in `node_modules` directories above
+the requiring script, and if a directory has a `package.json`, using
+that to determine the main file for this module.
+
+So if you compare `npm install foo`/`require("foo")` to all the
+decisions you used to have to take to find, download, copy, and load a
+dependency, we're truly living in the future.
+
+But all this doesn't help us very much yet when we are programming for
+the browser. We can _download_ packages from NPM, but we still have to
+add script tags to load them, or rely on a module loader, and hope
+that they actually implement the module style that we need.
+
+Enter bundlers. We made a very simple one before, but you can also
+write bundlers for CommonJS or AMD-style modules. They are, basically,
+tools that take a codebase spread out over multiple files, and turn it
+into one big file that can be easily loaded in the browser, by
+intelligently following dependencies.
+
+CommonJS bundlers were pioneeded by browserify. This was a very clever
+project that bundled code intended for node (back then putting browser
+code on NPM wasn't really done) in such a way that it could run in the
+browser. To do that, it came with compatibility shims for node's
+built-in libraries, so that even if you loaded a module that tried to
+touch the filesystem, it'd get some dummy module when requiring `"fs"`
+that would pretend to be doing file system operations on top of
+localstorage. That part never really got widely used, since you mostly
+want to run modules that don't need file access in the browser, but
+for some things like the built-in assert or resolve modules it can be
+helpful.
+
+What a bundler like browserify has to do, which our bundler didn't, is
+to help the modules get access to each other's interfaces. It not only
+has to make sure the dependencies are part of the bundle, but also
+that when you call `require`, it actually returns the interface of the
+dependency.
+
+There is an additional catch. Namely, in principle, the string you
+pass to `require` (or AMD `define`) is just a value. It's usually a
+string literal, but it doesn't have to be—it could be any expression,
+such as a reference to a variable that was previously computed in some
+hugely complicated way. As such, you only really know what is being
+required when you _run_ the program. Which is too late, for the
+bundler, so bundlers typically only work on dependencies that are
+specified with plain string literals.
+
+Let's write a CommonJS bundler. In the 2012 directory, you find our
+web app in CommonJS format. jQuery, rather than being copied in
+manually, is now installed through NPM.
+
+If we were doing this properly, we'd need to fully parse the modules,
+and then look through the syntax tree to find calls to `require`,
+while taking care to make sure that they are actually referring to the
+global `require`, not some local variable with the same name. But for
+this exercise, you are welcome to just run a regular expression over
+the code that looks for something that resembles a call to require.
+
+You can then do something similar to the primitive bundler, following
+dependencies and adding any files you can reach, but you have to wire
+up the `require` calls to the right code. Since the strings they pass
+don't unambiguously identify modules (there's resolution involved),
+one relatively straightforward way to put all modules (wrapped in
+functions) into an array, and to rewrite the argument to `require` to
+be an index into this array instead.
+
+So you'd get something like this:
+
+    !function(modules) {
+      var loaded = []
+      function require(i) {
+        if (!loaded[i]) {
+          var mod = loaded[i] = {exports: {}}
+          modules[i](mod.exports, require, mod)
+        }
+        return loaded[i].exports
+      }
+      require(0)
+    }([
+      function(exports, require, module) { ... }
+      function(exports, require, module) { ... }
+    ])
+
+The wrapper shim again tracks which modules it has already loaded, and
+defines a simple require function, which will be passed to each
+individual module. It starts by loading the first module in the array,
+which is assumed to be the starting script.
+
+---
+
+So then, the community unanimously agreed to all use CommonJS modules,
+and we could forget about all that.
+
+Hahah no. There has been a move towards publishing things as CommonJS
+on NPM by default, but in 2015, the new ECMAScript standard (6 / 2015)
+included a _new_ module system, quite incompatible with the others,
+and defined in a way that definitely didn't make it possible to
+include it in 'universal' module loader headers.
+
+Why did they even do that? Well, there are some good reasons. For one
+thing, our bundler, and all other bundlers, have been pretending that
+imports are static, whereas they are really dynamic—module names can
+be computed—which is a bit of a conceptual mismatch.
+
+Also, when interfaces are just values, it is rather hard to
+automatically check them to see whether the things you are importing
+are actually exported by your dependency module.
+
+And finally, the ergonomics of CommonJS and AMD, especially when it
+comes to exporting, are pretty awful, getting you things like:
+
+    let f = exports.f = function f() { ... }
+
+Whereas, with `export` being a language keywords, you can simply say:
+
+    export function f() { ... }
+
+These are pretty minor, but I do think they help—going from CommonJS
+to ES modules really makes code more pleasant. Unfortunately, a
+serious roadmap for how the community will start using these wasn't
+part of the standard.
+
+In short, our example module would now look like this:
+
+    import $ from "jquery"
+    export class Paper { ... }
+
+Exports are no longer a value, but rather a set of named _bindings_,
+which may _change_ after being imported. There's a special export
+named `default` that you get when you simply import a name. To import
+named bindings, you say
+
+    import {a, b, c} from "module"
+
+Engines were pretty quick to implement most of the ES6 standard, but
+modules have taken much longer. For the web, a standard for `<script
+type=module>` has been written, browsers are starting to ship it, some
+still behind a flag. However, it doesn't specify any module resolution
+beyond 'it's a URL relative to the current module', which means that
+it's not possible to run code written to import modules by name, or
+even code that omits the `.js` extension, directly in the browser.
+
+The story with node is also rather complicated. The node devs are
+working on support for such modules, but due to some parts of the
+design of this module system, specifically that you have to know in
+advance whether something is a module or a regular script when parsing
+it, this has been a difficult and controversial process.
+
+The current plan appears to be to require ES modules to get the
+extension `.mjs`, and allow interop between CommonJS modules and ES
+modules in the same system. Node _would_ resolve ES module names the
+same way as `require`-d names, so I expect that would work pretty
+well. Might be a while before it ships, though.
+
+For the browser, bundling, also during development, seems to remain
+the only viable solution. But given the plethora of other dialects
+that also require a compilation step, i.e TypeScript, Flow, JSX, and
+the use of half-standardized experimental language features, it seems
+that the community has mostly accepted that our source language isn't
+directly runnable anyway, so that we need a tooling step anyway—at
+which point you might as well also add a bundler.
+
+When it comes to bundling ES modules, the fact that they are defined
+in a more static way does create the opportunity for much nicer bundle
+output. Remember all the extra wrapper functions and the indirection
+of going through `require` to import things in our bundler?
+(Browserify's output is actually quite a bit worse—for good reasons.)
+
+When you have a system consisting of a lot of small modules, the
+overhead, both in code size and in run-time overhead, of this wrapping
+becomes significant. The 'rollup' tool for bundling ES modules did
+much better. It is able to put a bunch of modules into a single scope.
+For example turning this:
+
+    let x = 10
+    export function y() { return x }
+
+    import {y} from "./other.js"
+    console.log(y())
+
+Into simply:
+
+    let x = 10
+    function y() { return x }
+    console.log(y())
+
+Not only is there no extra glue code, the `import` and `export` parts
+simply vanished, making the output code _smaller_ than the input code.
+So that's pretty cool. There's a few complications, of course -- if
+the second file also had a variable named `x`, that'd have to be
+renamed. But renaming variables in JS code isn't hard, since scopes
+are static — minifiers do it, for example.
+
+This type of bundling is possible because ES modules share _bindings_,
+rather than values, which can be resolved and connected statically.
+Basically, exported bindings are 'merged' with the bindings that
+import them, resulting in a single binding in a shared scope.
+
+So ES modules bundle quite well, and are probably the future. Yet they
+don't really run natively yet, and if you're publishing to NPM, you
+should be providing your code as CommonJS modules. There is a sort-of
+convention of adding a `module` field to your package.json pointing at
+ES module code, alongside `main` pointing at CommonJS code, but that's
+not standardized yet, and the way it works is likely to change as
+node.js' support is developed, so that's not really looking great.
+
+There's a plugin for rollup that translates (some kinds of) CommonJS
+modules into ES modules on the fly and then rolls them up. This
+obviously doesn't work for all code, but _most_ modules are written to
+export only some static bindings, and those can be automatically
+translated without losing anything. Others do have to retain their
+wrapper, but can still become part of a wider rolled-up bundle.
+
+And needing tooling to run is no longer a very surprising thing. Whole
+tribes of JS developers are writing TypeScript, Flow, or JSX code,
+which also doesn't run 'natively' in any JS engine, and requires a
+compilation step.
+
+So I suppose we'll just have to resign ourselves to a compilation
+step. This can be very awkward during testing, but there are ways
+around that. Most tools come with a 'watch' feature where they'll
+automatically, incrementally recompile/rebundle when any module
+changes. Even better are webservers that make sure to recompile your
+files as-needed when you fetch them, so that you don't accidentally
+refresh before the recompilation finishes.
+
+There's also systems that implement something called 'hot reloading',
+where they'll update your code in a running app whenever you change
+anything. I don't like this much, since you're much more likely to run
+into inconsistent state if you keep running the same JS image.
+
+Another issue that comes up when working with compiled code is that
+the code that the browser is running isn't the code that you wrote.
+That was awkward for a bit, where you had to figure out what line in
+your actual code the line in the error message is referring to, but
+fortunately browsers added support for source maps, which are data
+structures mapping positions from the output file to position in the
+original file, which can be included in your code through magically
+formatted comments, either inline in the source file or by specifying
+the path of a separate file.
+
+The 2015 directory has the example app written as ES modules, and
+rollup installed. Figure out how to set up rollup so that you can
+conveniently develop with it.
+
+---
+
+Once you start using other people's code, or more generally any code
+that's not maintained inside a single repository, you have to start
+worrying about compatibility.
+
+Notably, you don't just depend on a given library, you depend on a
+given instance of a library. Older or newer instances likely won't
+work—older ones may not have the features you need, newer ones may
+have made changes to or dropped things that you were relying on.
+
+This is why we have versions, and it's another area where NPM sets a
+convention. NPM requires each release of a package to be tagged with a
+unique version, following the 'semantic versioning' (semver) style of
+version numbers.
+
+In short, that means that version number look like 1.2.3, and that
+there are rules about how you update your version number when you
+change something. Versions that differ only in the patch number are
+supposed to have the exact same interface. Those that differ only in
+minor and patch, the higher versions are backwards-compatible with the
+lower, but may have introduced new features that weren't present
+before. And a change in the major version means that breaking changes
+were made, and you can't blindly upgrade.
+
+Unfortunately, semantic versioning doesn't magically fix upgrading
+problems for us. New versions do come with new bugs, so sometimes
+upgrading to something that semver says is safe will break your code.
+You might even accidentally be relying on behavior that the developer
+considers broken, and which they fixed in a new release.
+
+The easiest thing would be if you just installed a given version of a
+library, notice that it works with your system, and then never think
+about it again. There are several reasons why this doesn't work well.
+
+The first is rather obvious: there might be some terrible bug in the
+library that you haven't noticed yet, and it might be fixed in newer
+releases. There have been several widely-publicised instances of
+really bad security problems in widely used modules that continued to
+be exploited long after the libraries themselves had brought out fixed
+versions. So that's an argument for upgrading things.
+
+This is why package.json will often specify a version _range_, rather
+than a single version. For example `^4.2.2`, which says 'any version
+greater or equal to 4.2.2 and less than 5.0.0'. There's a bunch of
+operators and notations you can use in your package.json version
+fields, but you usually want either the caret or a specific version.
+
+Version ranges are important to deal with a major problem that package
+managers have to solve, namely that in a bigger project you often end
+up with multiple packages relying on the same package. In the past, up
+to version 3, NPM had a very peculiar way, compared to other package
+managers, of installing subdependencies. It would simply duplicate
+them, under the dependency's directory.
+
+Due to the way node resolves package names, if a file in
+`node_modules/foo` asks for dependency `"bar"` and there's a
+`node_modules/foo/node_modules/bar` package installed, it'll use that
+one. So this works -- you just create a directory tree directly
+isomorphic to the dependency tree, and off you go.
+
+But there are some problems with that. For very modular systems, where
+lots of packages share the same dependency, it can end up installing a
+ridiculous amount of code. At one point, trying to run Babel as
+installed by NPM 2 had a five-second startup time because it was
+loading many, many copies of the same packages, and you had to run
+`npm dedupe`, which removes duplicated dependencies after the fact, to
+get things running properly. Also, bundling such a redundant tree for
+the browser is of course a disaster, since there, the size of the code
+is even more important.
+
+You can also get very interesting bugs from duplicated dependencies.
+If a module has any kind of state, for example allowing you to
+register plugins, you better hope that the instance where the plugin
+was registered is the same one through which you're trying to use it,
+or it won't be there. Also `instanceof` checks are likely to fail if
+the constructor you're testing against comes from a different instance
+than the one that actually created the object.
+
+So this, while simple, wasn't great, and since NPM 3 the tool tries to
+install dependencies in a 'flat' structure, putting as many of them as
+possible directly under your main project's `node_modules` directory.
+
+Now, if you have a 'diamond dependency', a dependency referenced by
+more than one package, NPM will try to find a version that matches the
+version ranges of all packages that require the package. If that
+fails, it'll still fall back to duplicating it. (But at least it can
+-- there are a lot of languages where this is simply impossible, and
+you can get stuck on such a conflict, being unable to install
+something. This is usually referred to as 'dependency hell'.)
+
+So that's a little messy, and still definitely gets in the way in some
+situations, but it mostly works.
+
+Then there's the issue of reproduceable installs. When you have
+version ranges for any dependency, or one of your dependencies uses
+version ranges, what you get when you install depends on which
+versions are currently available in the NPM registry. So you don't
+really know in advance, which produces the awkward effect that, after
+testing a system on one machine, deploying it to another machine can
+cause everything to break because a new broken release of one of your
+dependencies was published in the meantime.
+
+So that's bad. To counteract this, NPM used to have a 'shrinkwrap'
+feature, which has become the default behavior, under the new name
+'package lock' since version 5. This basically splits installation
+into two steps—first, compute a set of dependency versions that
+satisfy your dependency requirements, store the result of that in a
+file (`package-lock.json`), and _then_ actually install these versions
+in your `node_modules` directory. You can then store or commit this
+package lock file, and be sure that, when installing in production,
+you get the exact same effect.
+
+This complicates things further, but solves the problem of having to
+constantly deal with new versions being installed. Updating is now no
+longer something that happens implicitly on reinstall, because of a
+version range you specified, but an action you take. Which is
+preferable.
+
+When you have a big dependency tree, bundling into a single file is no
+longer very attractive. For a web-app that does a bunch of different
+things, using a bunch of big libraries, you'll easily fill megabytes
+of code, which has to be loaded and parsed as a whole before the app
+does anything.
+
+Fortunately, people are constantly running into all these problems and
+coming up with clever solutions. In this case, the tool we're
+interested in is Webpack, another bundler.
+
+Webpack does pretty much everything. It's not as specialized and
+elegant a tool as browserify or rollup, but for packaging up modern,
+complicated web apps, it's probably the best solution. It has plugins
+for things like directly importing CSS files to make sure they are
+loaded when your app loads, importing image files (the result will be
+a path to your image, which is automatically copied into your output
+directory), and _splitting bundles_, which is the feature we're
+interested in.
+
+To be able to do this, it requires control over an output directory,
+rather than just spitting out a single file, and a lot more
+configuration. But so it goes.
+
+Code splitting extends bundling by making some imports dynamic. The
+app is bundled up to these points, but all code that only has to be
+loaded after a dynamic import is put into a separate bundle, which
+will be loaded when the import is actually executed. Such imports must
+look differently, since they happen asyncronously and can happen
+anywhere, not just at the top level. Webpack currently uses the syntax
+`import(...)`, which is a proposed addition to the standard, for this
+purpose. This is an expression which returns a promise that resolves
+to the imported module's interface object. (Similar to `*
+as`-imports).
+
+Doing this kind of bundling by hand gets really awkward fast, but
+computers are great at it -- the secondary bundle will include all
+dependencies that were needed by the dynamically imported file, except
+those that were already in the main bundle, and code added by the
+bundler will make sure everything is connected properly when the
+secondary bundle is loaded.
+
+The last exercise, labeled 2017, deals with Webpack.

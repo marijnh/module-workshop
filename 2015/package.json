@@ -1,0 +1,10 @@
+{
+  "name": "module-workshop-exercise-2015",
+  "description": "Exercises for the module workshop",
+  "version": "0.0.1",
+  "author": "Marijn Haverbeke <marijnh@gmail.com>",
+  "devDependencies": {
+    "rollup": "^0.45.2",
+    "rollup-watch": "^4.3.1"
+  }
+}

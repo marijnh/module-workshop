@@ -1,0 +1,15 @@
+{
+  "name": "module-workshop-exercise-2017",
+  "description": "Exercises for the module workshop",
+  "version": "0.0.1",
+  "author": "Marijn Haverbeke <marijnh@gmail.com>",
+  "devDependencies": {
+    "css-loader": "^0.28.4",
+    "style-loader": "^0.18.2",
+    "webpack": "^3.4.1",
+    "webpack-bundle-analyzer": "^2.8.3"
+  },
+  "dependencies": {
+    "dom-confetti": "0.0.8"
+  }
+}

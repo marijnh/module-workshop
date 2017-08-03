@@ -1,0 +1,19 @@
+#paper {
+  margin: .5em auto;
+  font-family: Ubuntu, OpenSans, sans-serif;
+  font-size: 17px;
+  font-weight: bold;
+  max-width: 500px;
+}
+
+#paper input {
+  font: inherit;
+  border: none;
+  outline: none;
+  vertical-align: top;
+  padding: 0;
+  background: transparent;
+}
+
+span.wrong { color: #c00 }
+span.correct { color: #0b0 }
