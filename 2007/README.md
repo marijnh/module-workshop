@@ -20,7 +20,7 @@ familiar with jQuery, you may just replace
 `document.createElement("input")` with `$("<input>")[0]` and leave it
 at that.
 
-Make `index.html` load jQuery from `js/jquery-2.0.0.js` and see if it
+Make `index.html` load jQuery from `js/jquery.js` and see if it
 works. It probably won't. Figure out why, and fix it, preferably in a
 general way.
 

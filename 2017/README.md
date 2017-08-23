@@ -1,4 +1,4 @@
-# Exercises for the 2012 chapter
+# Exercises for the 2017 chapter
 
 This directory contains a copy the example web again, slightly
 restructured to use a `dist` directory for the actual web-accessible

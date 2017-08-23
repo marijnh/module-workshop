@@ -1,4 +1,4 @@
-# Exercises for the 2012 chapter
+# Exercises for the 2015 chapter
 
 This directory contains a copy of the example web app written as ES
 modules, and `rollup` installed under `node_modules`.
@@ -52,7 +52,7 @@ variables.
 
 ## Exercise 5 (hard): Imported objects
 
-Change to code to use the `import * as X from "./something.js"`
+Change the code to use the `import * as X from "./something.js"`
 construct, which binds `X` to an object containing all the exports
 from `something.js`. How does the output change?
 
