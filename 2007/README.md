@@ -50,3 +50,8 @@ order.
 
 Does your tool handle duplicate dependencies (when two modules depend
 on the same module) correctly?
+
+HINT: If you are writing this as node script (recommended), but you're
+not that familiar with node, see the 'If you're not familiar with
+node' heading in ../2009/README.md for some basic tools you might
+need.
