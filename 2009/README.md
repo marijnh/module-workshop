@@ -12,11 +12,12 @@ its dependencies and specify its exports.
 
 Resolution can be very simple, just resolve the given path as relative
 to the requiring module's own path. You don't even need to add the
-`.js` extension.
+`.js` extension (that has to be specified in the `require`) call.
 
-Use your loader to load `test/main.js`, for example like this:
+Use your loader to load `test/main.js`, for example by making it
+possible to evoke it from the command-line:
 
-    require("./myloader")("./test/main.js")
+    node loader.js test/main.js
 
 Once it works, compare the output with what you get when you directly
 run `node test/main.js`.
@@ -79,7 +80,7 @@ something like this:
     let func = new Function("arg1, arg2", "return arg1 + arg2")
     console.log(func(1, 2))
 
-## Exercise 2: Shared and cyclic dependencies
+## Exercise 2: Shared and cyclic dependencies (hard)
 
 The dependency graph of `main.js` looks something like this:
 
@@ -87,29 +88,29 @@ The dependency graph of `main.js` looks something like this:
         ↘           ↘
         world.js → preprocess.js
 
-`preprocess.js` is outputs something to the console when it is loaded.
-Does that occur once or twice when you load the code with your loader?
-If twice, your module caching is broken (or not implemented) and needs
-more work.
+`preprocess.js` is written to output something to the console when it
+is loaded. Does that occur once or twice when you load the code with
+your loader? If twice, your module caching is broken (or not
+implemented) and needs some more attention.
 
-Now try to load `test/even.js`, whose graph looks like this:
+Now try to load `test/even.js`, whose graph looks like this, i.e. it
+depends on `odd.js`, which in turn depends on `even.js`:
 
     even.js ←→ odd.js
 
 For example by doing this:
 
-    const {even} = require("./myloader")("test/even.js")
-    console.log(even(11))
+    node loader.js test/run-even.js
 
 What happens depends on how, exactly, you wrote your loader. If it
 already works, great, you may consider this exercise to be to explain
 _why_ it works. If not, continue.
 
 Cyclic dependencies are usually not a great idea, but CommonJS allows
-them, _if_ the modules leave their default `exports` object, instead
-of replacing it with a new value, _and_ they don't actually read from
-this object until both have finished loading. This is why the cyclic
-example modules are written a bit awkwardly:
+them, _if_ the modules use their default `module.exports` object,
+instead of replacing it with a new value, _and_ they don't actually
+read from this object until both have finished loading. This is why
+the cyclic example modules are written a bit awkwardly:
 
     const odd = require("./odd.js")
     exports.even = function(n) {

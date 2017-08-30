@@ -2,8 +2,8 @@
 
 ## Exercise 1: Implement a pseudo-CommonJS loader
 
-The solution is implemented in `loader.js`, which contains comments
-that explain it.
+The solution is implemented in `loader.js`, with comments that explain
+it.
 
 ## Exercise 2: Shared and cyclic dependencies
 
