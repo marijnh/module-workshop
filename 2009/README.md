@@ -52,6 +52,14 @@ By default, reading a file gives you a binary buffer object. The
 `"utf8"` argument tells it to convert the file content to a string,
 using UTF-8 encoding.
 
+The value that loading your file (with `require`) produces can be
+changed by assigning to `module.exports`.
+
+To access command-line arguments, use `process.argv`, which is an
+array of arguments. The first two are `node` and the name of the
+script that was started, the ones starting from index 2 are the actual
+arguments.
+
 ### Evaluating code
 
 When you have a string of code you want to evaluate, you could just
