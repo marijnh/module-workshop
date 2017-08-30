@@ -10,8 +10,8 @@ to it like this:
     })
 
 You could add error handling if you wanted, in case the connection is
-out by the time this is loaded, but since it's just a cosmetic
-enhancement, failing silently is fine.
+out by the time the second bundle is loaded, but since it's just a
+cosmetic enhancement, failing silently is fine.
 
 ## Exercise 2: Importing CSS
 
@@ -61,9 +61,10 @@ for this one... we should maybe include the CSS the old-fashioned way.
 ## Exercise 4 (hard): Diamond splitting
 
 The widely used solution in Webpack-land is a plugin called
-[`CommonsChunkPlugin`][1], which creates a separate chunk for all the
-code that would otherwise be required for multiple different bundles.
-(You can further configure this plugin to put specific things in
-separate bundles, to manually optimize things.)
+[`CommonsChunkPlugin`][1], which creates a separate bundle for all the
+code that would otherwise be required for multiple different bundles,
+so that it only has to be loaded once. (You can further configure this
+plugin to put specific things in separate bundles, to manually
+optimize things.)
 
 [1]: https://webpack.js.org/plugins/commons-chunk-plugin/

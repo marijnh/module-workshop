@@ -1,6 +1,6 @@
 # Exercises for the 2017 chapter
 
-This directory contains a copy the example web again, slightly
+This directory contains a copy the example web app again, slightly
 restructured to use a `dist` directory for the actual web-accessible
 files. It comes with Webpack pre-installed, and a `webpack.config.js`
 file that configures Webpack, when run without arguments (from
@@ -11,7 +11,7 @@ file that configures Webpack, when run without arguments (from
 
 This instance of the app uses `dom-confetti` to show confetti again.
 Imagine for a moment that that library is _huuuge_ (it's not), and we
-want to delay loading it until necessary—until the user entered a
+want to delay loading it until necessary—when the user enters a
 correct answer—to improve load time.
 
 Use a dynamic import (`import(modulename)`, returning a promise),

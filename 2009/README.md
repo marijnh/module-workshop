@@ -80,7 +80,7 @@ something like this:
     let func = new Function("arg1, arg2", "return arg1 + arg2")
     console.log(func(1, 2))
 
-## Exercise 2: Shared and cyclic dependencies (hard)
+## Exercise 2 (hard): Shared and cyclic dependencies
 
 The dependency graph of `main.js` looks something like this:
 
