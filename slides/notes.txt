@@ -6,6 +6,14 @@ approach to modularity mostly went from simple and deeply broken to
 complicated but largely working. Though at times we also hit
 complicated and broken.
 
+The workshop will alternate between me talking and you solving
+exercises (which I'll then talk about afterwards). We're a small
+enough group, so feel free to interrupt me with questions while I'm
+talking. Also, while you are working on exercises, I have nothing
+better to do than helping you, so feel free to ask for help. Borna
+here is also available for that, so just talk to whoever looks less
+busy when you get stuck.
+
 JavaScript has the good fortune of being born without any concept of
 modules built in. I say good fortune because, though it may sound nice
 to have a module system, a broken module system is worse than none at
@@ -43,18 +51,18 @@ So in the end it is all about interfaces -- splitting the complexity
 of a system by comparimentalizing, and allowing reuse by making it
 possible to write code against a given interface without worrying
 about the precise source code that's going to provide that interface.
-But most of this workshop is going to _be_ about how to make sure that
+But most of this workshop is going to be about how to make sure that
 the source code that provides the interfaces we rely on is loaded and
 that we have access to it.
+
+As our running example, we'll use a small web app for practicing
+simple arithmetic. For now, it consists of three modules, one that
+implements the output/user input system, one that generates exercises,
+and one that ties those two together into an actual working app.
 
 It is 2007. JavaScript development in the large is starting to be _a
 thing_. But we don't have much tools for it. Even build tools aren't
 really used yet. So how does modular development work?
-
-As our running example, we'll use a simple web app for practicing
-simple arithmetic. For now, it consists of three modules, one that
-implements the output/user input system, one that generates exercises,
-and one that ties those two together into an actual working app.
 
 Lots of script tags, mostly. Each script either adds something to the
 global scope for other scripts to access, or just _does_ something,
@@ -639,6 +647,9 @@ file (`package-lock.json`), and _then_ actually install these versions
 in your `node_modules` directory. You can then store or commit this
 package lock file, and be sure that, when installing in production,
 you get the exact same effect.
+
+(Yarn, another client for the NPM package repository which came out
+last year, did this by default before NPM did.)
 
 This complicates things further, but solves the problem of having to
 constantly deal with new versions being installed. Updating is now no
